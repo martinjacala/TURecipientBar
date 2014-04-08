@@ -11,8 +11,8 @@
 #import <QuartzCore/QuartzCore.h>
 
 
-#define TURecipientsLineHeight 43.0
 #define TURecipientsPlaceholder @"\u200B"
+#define TURecipientsSeparatorHeight 0.5f
 
 void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 
@@ -36,6 +36,7 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
     NSMutableDictionary *_recipientBackgroundImages; // [@(UIControlState)] UIImage
     NSMutableDictionary *_recipientTitleTextAttributes; // [@(UIControlState)] NSDictionary(text attributes dictionary)
     
+    CGFloat TURecipientsLineHeight;
 }
 
 #pragma mark - Properties
@@ -177,19 +178,15 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
             }
         }
         
-        _summaryLabel.textColor = [UIColor darkTextColor];
-        if (self.summaryTextAttributes == nil) {
-            _summaryLabel.text = summary;
-        } else {
-            _summaryLabel.attributedText = [[NSAttributedString alloc] initWithString:summary attributes:self.summaryTextAttributes];
-        }
+        _summaryLabel.textColor = self.labelColor;
+        _summaryLabel.font = self.labelFont;
+        _summaryLabel.text = summary;
+        
     } else {
-        _summaryLabel.textColor = [UIColor lightGrayColor];
-        if (self.placeholderTextAttributes == nil) {
-            _summaryLabel.text = self.placeholder;
-        } else {
-            _summaryLabel.attributedText = [[NSAttributedString alloc] initWithString:self.placeholder attributes:self.placeholderTextAttributes];
-        }
+        _summaryLabel.textColor = self.placeholderColor;
+        _summaryLabel.font = self.placeholderLabelFont;
+        _summaryLabel.text = self.placeholder;
+        
     }
 }
 
@@ -296,7 +293,7 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 		if (_searching) {
 			self.scrollEnabled = NO;
 			_lineView.hidden = NO;
-			_lineView.backgroundColor = [UIColor colorWithWhite:0.557 alpha:1.000];
+			_lineView.backgroundColor = self.lineColor; //[UIColor colorWithWhite:0.557 alpha:1.000];
 			
 			self.layer.shadowColor = [UIColor blackColor].CGColor;
 			self.layer.shadowOffset = CGSizeMake(0.0, 0.0);
@@ -304,11 +301,9 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 			self.layer.shadowRadius = 5.0;
 			self.clipsToBounds = NO;
 		} else {
-			_lineView.backgroundColor = [UIColor colorWithWhite:0.8 alpha:1.000];
-			
-			self.layer.shadowOpacity = 0.0;
-			self.layer.shadowRadius = 0.0;
-			self.clipsToBounds = YES;
+//            _lineView.hidden = (_lastKnownSize.height <= 44);
+			_lineView.backgroundColor = self.lineColor; //[UIColor colorWithWhite:0.8 alpha:1.000];
+			self.clipsToBounds = NO;
 		}
 	}
 }
@@ -364,16 +359,16 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 	
 	
 	self.backgroundColor = [UIColor whiteColor];
-	if (self.heightConstraint == nil) {
-		_heightConstraint = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:0 multiplier:1.0 constant:TURecipientsLineHeight + 1.0];
-        _heightConstraint.priority = UILayoutPriorityDefaultHigh;
-		[self addConstraint:_heightConstraint];
-	}
-	self.clipsToBounds = YES;
+//	if (self.heightConstraint == nil) {
+//		_heightConstraint = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:0 multiplier:1.0 constant:TURecipientsLineHeight + 1.0];
+//        _heightConstraint.priority = UILayoutPriorityDefaultHigh;
+//		[self addConstraint:_heightConstraint];
+//	}
+	self.clipsToBounds = NO;
 	
-	_lineView = [[UIView alloc] init];
-	_lineView.backgroundColor = [UIColor colorWithWhite:0.800 alpha:1.000];
-	[self addSubview:_lineView];
+//	_lineView = [[UIView alloc] init];
+//	_lineView.backgroundColor = self.lineColor; //[UIColor colorWithWhite:0.800 alpha:1.000];
+//	[self addSubview:_lineView];
 	
 	_toLabel = [[UILabel alloc] init];
     self.label = NSLocalizedString(@"To: ", nil);
@@ -386,7 +381,7 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 	
 	_textField = [[UITextField alloc] init];
 	_textField.text = TURecipientsPlaceholder;
-    _textField.font = [UIFont systemFontOfSize:15.0];
+//    _textField.font = [UIFont systemFontOfSize:15.0];
     _textField.textColor = [UIColor blackColor];
 	_textField.delegate = self;
 	_textField.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -399,15 +394,18 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 	
 	_summaryLabel = [[UILabel alloc] init];
     _summaryLabel.backgroundColor = [UIColor clearColor];
-	_summaryLabel.font = [UIFont systemFontOfSize:15.0];
+//	_summaryLabel.font = [UIFont systemFontOfSize:15.0];
 	[self addSubview:_summaryLabel];
 	
 	
 	[self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(select:)]];
     
-    
+    _labelColor = [UIColor grayColor];
+    _placeholderColor = [UIColor lightGrayColor];
+    _lineColor = [UIColor colorWithWhite:0.557 alpha:1.000];
     
     [self _setNeedsRecipientLayout];
+    [self _updateSummary];
 }
 
 - (id)initWithCoder:(NSCoder *)aDecoder
@@ -432,6 +430,7 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
         // we need to have a default size that we can layout against
         frame = CGRectMake(0.0, 0.0, 320.0, 44.0);
     }
+    TURecipientsLineHeight = frame.size.height + 2.f;
     
     self = [super initWithFrame:frame];
     if (self != nil) {
@@ -454,7 +453,7 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 {
     CGRect recipientViewFrame;
     if (recipientView == _textField) {
-        recipientViewFrame.size = CGSizeMake(100.0, 43.0);
+        recipientViewFrame.size = CGSizeMake(100.0, 28);//43.0);
     } else {
         recipientViewFrame.size = recipientView.intrinsicContentSize;
     }
@@ -529,15 +528,15 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
     
     [_lineView.superview bringSubviewToFront:_lineView];
     if (self.searching) {
-        _lineView.frame = CGRectMake(0.0, self.contentSize.height - 1.0, self.bounds.size.width, 1.0);
+        _lineView.frame = CGRectMake(0.0, self.contentSize.height - 1.0, self.bounds.size.width, TURecipientsSeparatorHeight);
     } else {
-        _lineView.frame = CGRectMake(0.0, self.contentOffset.y + self.bounds.size.height - 1.0, self.bounds.size.width, 1.0);
+        _lineView.frame = CGRectMake(0.0, self.contentOffset.y + self.bounds.size.height - 1.0, self.bounds.size.width, TURecipientsSeparatorHeight);
     }
     
     if (_textField.isFirstResponder && !self.searching) {
-		self.heightConstraint.constant = self.contentSize.height;
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, self.contentSize.height);
 	} else {
-		self.heightConstraint.constant = TURecipientsLineHeight + 1.0;
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, TURecipientsLineHeight + 1);
 	}
     
     if (_searching) {
@@ -571,6 +570,7 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 	}
 	
 	_lastKnownSize = self.bounds.size;
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"TURecipientsBarRectChanged" object:self userInfo:@{@"height" : [NSNumber numberWithFloat:_lastKnownSize.height]}];
 }
 
 - (void)setBounds:(CGRect)bounds
@@ -656,7 +656,11 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 
 - (void)_scrollToBottomAnimated:(BOOL)animated
 {
-    [self setContentOffset:CGPointMake(0.0, self.contentSize.height - self.bounds.size.height) animated:animated];
+    CGFloat diff = self.contentSize.height - self.bounds.size.height;
+    CGPoint point = CGPointMake(0.0, diff);
+    
+    NSLog(@"%@", NSStringFromCGPoint(point));
+    [self setContentOffset:point animated:animated];
 }
 
 
