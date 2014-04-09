@@ -271,15 +271,6 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 	return [_toLabel text];
 }
 
-- (void)setHeightConstraint:(NSLayoutConstraint *)heightConstraint
-{
-	if (_heightConstraint != heightConstraint) {
-		[self removeConstraint:_heightConstraint];
-		
-		_heightConstraint = heightConstraint;
-	}
-}
-
 - (void)setSearching:(BOOL)searching
 {
 	if (_searching != searching) {
@@ -295,10 +286,6 @@ void *TURecipientsSelectionContext = &TURecipientsSelectionContext;
 			_lineView.hidden = NO;
 			_lineView.backgroundColor = self.lineColor; //[UIColor colorWithWhite:0.557 alpha:1.000];
 			
-			self.layer.shadowColor = [UIColor blackColor].CGColor;
-			self.layer.shadowOffset = CGSizeMake(0.0, 0.0);
-			self.layer.shadowOpacity = 0.5;
-			self.layer.shadowRadius = 5.0;
 			self.clipsToBounds = NO;
 		} else {
 //            _lineView.hidden = (_lastKnownSize.height <= 44);
